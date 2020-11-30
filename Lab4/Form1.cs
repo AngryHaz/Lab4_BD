@@ -146,10 +146,16 @@ namespace Lab4
            
             //OPEN
             //ekran.Series[0].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            
             //CLOSE
-            ekran.Series[1].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            //SMA
             ekran.Series[0].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            ekran.Series[0].BorderWidth = 3;
+            ekran.Series[0].Color = Color.Aqua;
+
+            //SMA
+            ekran.Series[1].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            ekran.Series[1].BorderWidth = 3;
+            ekran.Series[0].Color = Color.OrangeRed;
 
             const int N = 10;
             int j = 0;
@@ -159,10 +165,10 @@ namespace Lab4
                 //Задаем среднее скользящее
                 set_valueSMA(i + global_iterator);
 
-                ekran.Series[0].Points.AddXY(j, dataTable.Rows[i + global_iterator].Field<double>("SMA"));
-                ekran.Series[1].Points.AddXY(j, dataTable.Rows[i + global_iterator].Field<double>("OPEN"));
+                ekran.Series[0].Points.AddXY(j, dataTable.Rows[i + global_iterator].Field<double>("OPEN"));
+                ekran.Series[1].Points.AddXY(j, dataTable.Rows[i + global_iterator].Field<double>("SMA"));
                 //ekran.Series[1].Points.AddXY(j, dataTable.Rows[i + global_iterator].Field<double>("CLOSE"));
-                
+
                 j += 1;
             }
             //После того как таймер нарисовал новый график сдвигаем получаемые значения в таблице на на единицу

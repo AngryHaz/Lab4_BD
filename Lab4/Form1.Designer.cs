@@ -45,6 +45,7 @@
             legend1.Name = "Legend1";
             this.ekran.Legends.Add(legend1);
             this.ekran.Location = new System.Drawing.Point(0, 0);
+            this.ekran.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.ekran.Name = "ekran";
             series1.ChartArea = "ChartArea1";
             series1.Legend = "Legend1";
@@ -54,16 +55,17 @@
             series2.Name = "Sin(x) - value";
             this.ekran.Series.Add(series1);
             this.ekran.Series.Add(series2);
-            this.ekran.Size = new System.Drawing.Size(802, 452);
+            this.ekran.Size = new System.Drawing.Size(1600, 900);
             this.ekran.TabIndex = 0;
             this.ekran.Text = "chart1";
             // 
             // Form1
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.ClientSize = new System.Drawing.Size(1584, 861);
             this.Controls.Add(this.ekran);
+            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.Name = "Form1";
             this.Text = "Form1";
             this.Load += new System.EventHandler(this.Form1_Load);

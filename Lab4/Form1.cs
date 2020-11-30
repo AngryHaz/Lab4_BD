@@ -20,15 +20,17 @@ namespace Lab4
         System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
         public static DataTable dataTable = new DataTable();
         public int global_iterator = 0;
-        public int lenWindow = 10;  //Размер скользящего окна
+        public static int lenWindow = 10;  //Размер скользящего окна
+        public static int current_string = 0;
+        public static bool createTable = true;
 
         public Form1()
         {
             InitializeComponent();
 
             //Заполнение таблицы Real-Time
-            Thread IniTable = new Thread(new ThreadStart(InitializationDataTable));
-            IniTable.Start();
+            //Thread IniTable = new Thread(new ThreadStart(InitializationDataTable));
+            //IniTable.Start();
 
             timer.Tick += new EventHandler(timer_Tick);
             timer.Interval = 1000;
@@ -57,9 +59,8 @@ namespace Lab4
             _dataT.Rows.Add(nrow);
         }
 
-        static void InitializationDataTable()
+        static void LoadDataInTable()
         {
-            
             /*  
                 Считывание файла в таблицу типа DataGridView
                 https://www.bestprog.net/ru/2018/02/17/the-datagridview-control_ru/#q01
@@ -67,32 +68,31 @@ namespace Lab4
                 Возможен вариант асинхронного чтения файла - наиболее близко подходит по сути задачи.
                 Считывание строк файла одновременно с их обработкой - симуляция онлайн биржи
             */
-            bool createTable = true;
-
-            using (StreamReader sr = new StreamReader(@"C:\Users\AnHaz\Desktop\Универ\BigData\Lab4\Lab4WF\Lab4_input.txt", System.Text.Encoding.Default))
-            {
                 //[    1    ] [    2    ] [    3    ] [    4    ] [    5    ]
                 //| <TIME>  | | <OPEN>  | | <HIGH>  | | <LOW>   | | <CLOSE> |
-                string line;
-                Console.WriteLine("Началось считывание файла.");
-                while ((line = sr.ReadLine()) != null)
+            string[] lines;
+
+            Console.WriteLine("Началось считывание файла.");
+            dataTable.Clear();
+            lines = File.ReadLines(@"C:\Users\AnHaz\Desktop\Универ\BigData\Lab4\Lab4WF\Lab4_input.txt").Skip(current_string).Take(lenWindow).ToArray();
+            foreach(string item in lines)
+            {
+                string[] words = item.ToString().Split(new char[] { ';' });
+                if (createTable)
                 {
-                    string[] words = line.Split(new char[] { ';' });
-                    if (createTable)
+                    for (int cs = 0; cs < words.Length; cs++)
                     {
-                        for (int cs = 0; cs < words.Length; cs++)
-                        {
-                            set_columnT(dataTable, words, cs);
-                        }
-                        createTable = false;
+                        set_columnT(dataTable, words, cs);
                     }
-                    else
-                    {
-                        //DataTable.Rows https://docs.microsoft.com/ru-ru/dotnet/api/system.data.datatable.rows?view=net-5.0
-                        set_valueT(dataTable, words);
-                    }
+                    createTable = false;
+                }
+                else
+                {
+                    //DataTable.Rows https://docs.microsoft.com/ru-ru/dotnet/api/system.data.datatable.rows?view=net-5.0
+                    set_valueT(dataTable, words);
                 }
             }
+            current_string += 1;
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -102,10 +102,8 @@ namespace Lab4
         //Вызываем отрисовку по такту описанному в timer.Interval смотри Form1()
         void timer_Tick(object sender, EventArgs e)
         {
-            if (global_iterator != dataTable.Rows.Count + 1)
-            {
-                ShowNewPoints(sender, e);
-            }
+            LoadDataInTable();
+            ShowNewPoints(sender, e);
         }
 
         //Тут отрисовываем 10 рандомных точек
@@ -126,14 +124,18 @@ namespace Lab4
             int j = 0;
 
             for (int i = 0; i < lenWindow; i++)
-            {
+            {   
+                if(i > dataTable.Rows.Count - 1)
+                {
+                    break; //Если в таблице строк меньше, чем нужно вывести, то прерываем
+                }
                 //double a = dataTable.Rows[i].Field<double>("OPEN");
-                ekran.Series[0].Points.AddXY(j, dataTable.Rows[i + global_iterator].Field<double>("OPEN"));
-                ekran.Series[1].Points.AddXY(j, dataTable.Rows[i + global_iterator].Field<double>("CLOSE"));
+                ekran.Series[0].Points.AddXY(j, dataTable.Rows[i].Field<double>("OPEN"));
+                ekran.Series[1].Points.AddXY(j, dataTable.Rows[i].Field<double>("CLOSE"));
                 j += 1;
             }
             //После того как таймер нарисовал новый график сдвигаем получаемые значения в таблице на на единицу
-            global_iterator += 1;
+            //global_iterator += 1;
 
             Axis ax = new Axis();
             ax.Title = "Дата";

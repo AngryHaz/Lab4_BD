@@ -20,43 +20,33 @@ namespace Lab4
         System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
         public static DataTable dataTable = new DataTable();
         public int global_iterator = 0;
-        public int lenWindow = 10;  //Размер скользящего окна
-        
-        //SMA - Скользящее среднее. Формула расчета:
-        //https://allfi.biz/Forex/TechnicalAnalysis/Trend-Indicators/prostoe-skolzjashhee-srednee.php
+        public static int lenWindow = 10;  //Размер скользящего окна
+        public static int current_string = 0;
+        public static bool createTable = true;
 
         public Form1()
         {
             InitializeComponent();
 
             //Заполнение таблицы Real-Time
-            Thread IniTable = new Thread(new ThreadStart(InitializationDataTable));
-            IniTable.Start();
+            //Thread IniTable = new Thread(new ThreadStart(InitializationDataTable));
+            //IniTable.Start();
 
             timer.Tick += new EventHandler(timer_Tick);
             timer.Interval = 1000;
             timer.Start();
         }
 
-        static void set_columnT(DataTable _dataT, string[] words)
+        static void set_columnT(DataTable _dataT, string[] words, int num_col)
         {
-            for (int cs = 0; cs < words.Length; cs++)
+            if (num_col == 0) //Если это первая колонка, то тип значения = DataTime
             {
-                if (cs == 0) //Если это первая колонка, то тип значения = DataTime
-                {
-                    _dataT.Columns.Add(words[cs], typeof(string));
-                }
-                else //Иначе тип колонки = double
-                {
-                    _dataT.Columns.Add(words[cs], typeof(double));
-                }
+                _dataT.Columns.Add(words[num_col], typeof(string));
             }
-
-            //Задаем таблице дополнительные колонки для расчета показателей SMA, MACD, OBV
-            _dataT.Columns.Add("SMA",   typeof(double));
-            _dataT.Columns.Add("MACD",  typeof(double));
-            _dataT.Columns.Add("OBV",   typeof(double));
-
+            else //Иначе тип колонки = double
+            {
+                _dataT.Columns.Add(words[num_col], typeof(double));
+            }
         }
 
         static void set_valueT(DataTable _dataT, string[] words)
@@ -68,28 +58,8 @@ namespace Lab4
             }
             _dataT.Rows.Add(nrow);
         }
-        static void set_valueSMA(int index_table)
-        {
-            int smoothing = 4; //Сглаживание
 
-            if (index_table < smoothing - 1)
-            {
-                dataTable.Rows[index_table].SetField("SMA", 0);
-                return;
-            }
-            else
-            {
-                double sum_value = 0;
-                //double SMA = 0;
-                int bottom_line = index_table - (smoothing - 1);
-                for (int i = bottom_line; i <= index_table; i++)
-                {
-                    sum_value += dataTable.Rows[i].Field<double>("OPEN");
-                }
-                dataTable.Rows[index_table].SetField("SMA", sum_value / smoothing);
-            }
-        }
-        static void InitializationDataTable()
+        static void LoadDataInTable()
         {
             /*  
                 Считывание файла в таблицу типа DataGridView
@@ -98,28 +68,31 @@ namespace Lab4
                 Возможен вариант асинхронного чтения файла - наиболее близко подходит по сути задачи.
                 Считывание строк файла одновременно с их обработкой - симуляция онлайн биржи
             */
-            bool createTable = true;
-            using (StreamReader sr = new StreamReader(@"C:\Users\AnHaz\Desktop\Универ\BigData\Lab4\Lab4WF\Lab4_input.txt", System.Text.Encoding.Default))
-            {
                 //[    1    ] [    2    ] [    3    ] [    4    ] [    5    ]
                 //| <TIME>  | | <OPEN>  | | <HIGH>  | | <LOW>   | | <CLOSE> |
-                string line;
-                Console.WriteLine("Началось считывание файла.");
-                while ((line = sr.ReadLine()) != null)
+            string[] lines;
+
+            Console.WriteLine("Началось считывание файла.");
+            dataTable.Clear();
+            lines = File.ReadLines(@"C:\Users\AnHaz\Desktop\Универ\BigData\Lab4\Lab4WF\Lab4_input.txt").Skip(current_string).Take(lenWindow).ToArray();
+            foreach(string item in lines)
+            {
+                string[] words = item.ToString().Split(new char[] { ';' });
+                if (createTable)
                 {
-                    string[] words = line.Split(new char[] { ';' });
-                    if (createTable)
+                    for (int cs = 0; cs < words.Length; cs++)
                     {
-                        set_columnT(dataTable, words);
-                        createTable = false;
+                        set_columnT(dataTable, words, cs);
                     }
-                    else
-                    {
-                        //DataTable.Rows https://docs.microsoft.com/ru-ru/dotnet/api/system.data.datatable.rows?view=net-5.0
-                        set_valueT(dataTable, words);
-                    }
+                    createTable = false;
+                }
+                else
+                {
+                    //DataTable.Rows https://docs.microsoft.com/ru-ru/dotnet/api/system.data.datatable.rows?view=net-5.0
+                    set_valueT(dataTable, words);
                 }
             }
+            current_string += 1;
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -129,10 +102,8 @@ namespace Lab4
         //Вызываем отрисовку по такту описанному в timer.Interval смотри Form1()
         void timer_Tick(object sender, EventArgs e)
         {
-            if (global_iterator != dataTable.Rows.Count + 1)
-            {
-                ShowNewPoints(sender, e);
-            }
+            LoadDataInTable();
+            ShowNewPoints(sender, e);
         }
 
         //Тут отрисовываем 10 рандомных точек
@@ -145,28 +116,25 @@ namespace Lab4
             }
            
             //OPEN
-            //ekran.Series[0].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            ekran.Series[0].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
             //CLOSE
             ekran.Series[1].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            //SMA
-            ekran.Series[0].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-
+            
             const int N = 10;
             int j = 0;
 
             for (int i = 0; i < lenWindow; i++)
-            {
-                //Задаем среднее скользящее
-                set_valueSMA(i + global_iterator);
-
-                ekran.Series[0].Points.AddXY(j, dataTable.Rows[i + global_iterator].Field<double>("SMA"));
-                ekran.Series[1].Points.AddXY(j, dataTable.Rows[i + global_iterator].Field<double>("OPEN"));
-                //ekran.Series[1].Points.AddXY(j, dataTable.Rows[i + global_iterator].Field<double>("CLOSE"));
-                
+            {   
+                if(i > dataTable.Rows.Count - 1)
+                {
+                    break; //Если в таблице строк меньше, чем нужно вывести, то прерываем
+                }
+                ekran.Series[0].Points.AddXY(j, dataTable.Rows[i].Field<double>("OPEN"));
+                ekran.Series[1].Points.AddXY(j, dataTable.Rows[i].Field<double>("CLOSE"));
                 j += 1;
             }
             //После того как таймер нарисовал новый график сдвигаем получаемые значения в таблице на на единицу
-            global_iterator += 1;
+            //global_iterator += 1;
 
             Axis ax = new Axis();
             ax.Title = "Дата";
